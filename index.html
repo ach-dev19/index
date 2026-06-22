@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Chess Puzzles</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: #1a1a1a;
+    color: #e8e8e8;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 620px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #f5f0e8;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.1em;
+  }
+
+  .score-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 1.5rem;
+  }
+
+  .sc {
+    font-size: 11px;
+    color: #888;
+  }
+
+  .sc strong {
+    font-size: 18px;
+    font-weight: 500;
+    color: #f5f0e8;
+    display: block;
+  }
+
+  .board-wrap {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .board-col { flex: 0 0 auto; }
+
+  .board-outer { display: flex; }
+
+  .coord-rank-col {
+    display: flex;
+    flex-direction: column;
+    margin-right: 4px;
+  }
+
+  .coord-rank-col span {
+    height: 54px;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .board {
+    border: 1px solid #333;
+    display: inline-block;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .rank { display: flex; }
+
+  .sq {
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    user-select: none;
+    position: relative;
+  }
+
+  .sq.light { background: #f0d9b5; }
+  .sq.dark  { background: #b58863; }
+
+  .coord-file {
+    display: flex;
+    margin-top: 4px;
+  }
+
+  .coord-file span {
+    width: 54px;
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .info-col {
+    flex: 1;
+    min-width: 210px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+
+  .badge.mate    { background: #3d1515; color: #f08080; }
+  .badge.tactic  { background: #0f2a3d; color: #7bc4f5; }
+  .badge.endgame { background: #0f2e18; color: #6dc98a; }
+
+  .puzzle-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #f5f0e8;
+    margin-bottom: 4px;
+  }
+
+  .turn-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 1rem;
+  }
+
+  .turn-label strong { color: #f5f0e8; }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  #answer {
+    flex: 1;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #f5f0e8;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #answer:focus { border-color: #666; }
+
+  #answer::placeholder { color: #555; }
+
+  #submit {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 8px 16px;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #e8e8e8;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  #submit:hover { background: #333; border-color: #555; }
+
+  .feedback {
+    font-size: 12px;
+    padding: 9px 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    min-height: 38px;
+    line-height: 1.5;
+  }
+
+  .feedback.correct { background: #0d2e18; color: #6dc98a; border: 1px solid #1a5a2e; }
+  .feedback.wrong   { background: #2e0d0d; color: #f08080; border: 1px solid #5a1a1a; }
+  .feedback.hint    { background: #0f2040; color: #7bc4f5; border: 1px solid #1a3a6a; }
+  .feedback.empty   { background: #222; color: #666; border: 1px solid #2e2e2e; }
+
+  .hint-note {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 12px;
+    min-height: 16px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-sm {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 6px 13px;
+    background: transparent;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #888;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .btn-sm:hover { background: #2a2a2a; color: #e8e8e8; border-color: #555; }
+  .btn-sm.primary { border-color: #555; color: #e8e8e8; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #2a2a2a;
+    margin: 1.5rem 0;
+  }
+
+  .notation-guide {
+    font-size: 11px;
+    color: #555;
+    line-height: 1.8;
+  }
+
+  .notation-guide span { color: #888; }
+
+  /* ---------- AI Coach chat widget ---------- */
+  #chat-launcher {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #f0d9b5;
+    color: #1a1a1a;
+    border: 1px solid #b58863;
+    cursor: pointer;
+    font-size: 26px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    transition: transform 0.15s ease;
+    z-index: 50;
+  }
+
+  #chat-launcher:hover { transform: scale(1.08); }
+
+  #chat-panel {
+    position: fixed;
+    bottom: 96px;
+    right: 24px;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+    height: 460px;
+    max-height: calc(100vh - 130px);
+    background: #222;
+    border: 1px solid #3a3a3a;
+    border-radius: 12px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 50;
+  }
+
+  #chat-panel.open { display: flex; }
+
+  .chat-header {
+    background: #181818;
+    border-bottom: 1px solid #2e2e2e;
+    padding: 13px 16px;
+  }
+
+  .chat-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #f5f0e8;
+  }
+
+  .chat-header p {
+    font-size: 10px;
+    color: #777;
+    margin-top: 3px;
+    letter-spacing: 0.08em;
+  }
+
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .cmsg {
+    max-width: 88%;
+    padding: 9px 12px;
+    border-radius: 10px;
+    white-space: pre-wrap;
+  }
+
+  .cmsg.bot {
+    background: #2a2a2a;
+    border: 1px solid #343434;
+    color: #e8e8e8;
+    align-self: flex-start;
+    border-bottom-left-radius: 3px;
+  }
+
+  .cmsg.user {
+    background: #f0d9b5;
+    color: #1a1a1a;
+    align-self: flex-end;
+    border-bottom-right-radius: 3px;
+  }
+
+  .cmsg.typing { color: #777; font-style: italic; }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 11px;
+    border-top: 1px solid #2e2e2e;
+    background: #1e1e1e;
+  }
+
+  #chat-input {
+    flex: 1;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 9px 11px;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 7px;
+    color: #f5f0e8;
+    outline: none;
+  }
+
+  #chat-input:focus { border-color: #666; }
+  #chat-input::placeholder { color: #555; }
+
+  #chat-send {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 0 15px;
+    background: #f0d9b5;
+    border: none;
+    border-radius: 7px;
+    color: #1a1a1a;
+    cursor: pointer;
+  }
+
+  #chat-send:hover { background: #e6cda3; }
+  #chat-send:disabled { background: #555; color: #888; cursor: default; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Chess Puzzles</h1>
+  <div class="subtitle">TYPE YOUR MOVE IN ALGEBRAIC NOTATION</div>
+
+  <div class="score-row">
+    <div class="sc"><strong id="sc-solved">0</strong>solved</div>
+    <div class="sc"><strong id="sc-attempts">0</strong>attempts</div>
+    <div class="sc"><strong id="sc-num">1/10</strong>puzzle</div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board-col">
+      <div class="board-outer">
+        <div class="coord-rank-col" id="rank-coords"></div>
+        <div>
+          <div class="board" id="board"></div>
+          <div class="coord-file" id="file-coords"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-col">
+      <div class="badge" id="badge">MATE IN 1</div>
+      <div class="puzzle-title" id="puzzle-title">Find the checkmate</div>
+      <div class="turn-label" id="turn-label">White to move</div>
+
+      <div class="input-row">
+        <input id="answer" placeholder="e.g. Qxf7#, Rd8+, e8=Q" autocomplete="off" spellcheck="false"/>
+        <button id="submit" onclick="checkAnswer()">Check</button>
+      </div>
+
+      <div class="feedback empty" id="feedback">Enter your move above</div>
+      <div class="hint-note" id="hint-note"></div>
+
+      <div class="btn-row">
+        <button class="btn-sm" onclick="showHint()">Hint</button>
+        <button class="btn-sm" onclick="showSolution()">Solution</button>
+        <button class="btn-sm primary" onclick="nextPuzzle()">Next puzzle →</button>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <div class="notation-guide">
+    <span>Pieces:</span> K=King · Q=Queen · R=Rook · B=Bishop · N=Knight · (pawns = just the square)<br/>
+    <span>Symbols:</span> x=capture · +=check · #=checkmate · e8=Q promotion<br/>
+    <span>Examples:</span> e4 · Nf3 · Bxc6 · O-O (castle) · e8=Q
+  </div>
+</div>
+
+<!-- ---------- AI Coach chat widget ---------- -->
+<button id="chat-launcher" aria-label="Open AI coach">♞</button>
+
+<div id="chat-panel">
+  <div class="chat-header">
+    <h2>AI Coach</h2>
+    <p>KNOWS THE PUZZLE ON YOUR BOARD · ASK FOR HELP</p>
+  </div>
+  <div id="chat-messages">
+    <div class="cmsg bot">Hi! I'm your chess coach. I can see the puzzle you're working on. Ask me things like "give me a nudge", "why doesn't Rd1 work?", or "explain what a fork is". I won't spoil the answer unless you ask. ♟</div>
+  </div>
+  <div class="chat-input-row">
+    <input id="chat-input" placeholder="Ask the coach..." autocomplete="off" spellcheck="false"/>
+    <button id="chat-send">Send</button>
+  </div>
+</div>
+
+<script>
+const PIECES = {
+  K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙',
+  k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟'
+};
+
+const PUZZLES = [
+  {
+    title: "Checkmate in 1",
+    badge: "MATE IN 1",
+    type: "mate",
+    turn: "White",
+    fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1",
+    solution: ["Qxf7#"],
+    hints: ["The queen has a deadly diagonal", "The f7 square is undefended"],
+    explain: "Qxf7# is Scholar's Mate — the queen and bishop combine on f7 for instant checkmate."
+  },
+  {
+    title: "Win the queen",
+    badge: "TACTIC",
+    type: "tactic",
+    turn: "White",
+    fen: "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1",
+    solution: ["Bxf7+"],
+    hints: ["Attack the king and queen at the same time", "A bishop move creates a fork"],
+    explain: "Bxf7+ forks the king and queen. After Kxf7, Ng5+ wins the queen."
+  },
+  {
+    title: "Back rank mate",
+    badge: "MATE IN 1",
+    type: "mate",
+    turn: "White",
+    fen: "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
+    solution: ["Rd8#"],
+    hints: ["The king cannot move up", "The back rank is vulnerable"],
+    explain: "Rd8# delivers back rank checkmate — the f7, g7, h7 pawns trap their own king."
+  },
+  {
+    title: "Rook smothered",
+    badge: "MATE IN 2",
+    type: "mate",
+    turn: "White",
+    fen: "r5rk/5K1p/7R/8/8/8/8/8 w - - 0 1",
+    solution: ["Rh8+", "Rxh8#"],
+    hints: ["Force the rook to block its own king", "Sacrifice to smother"],
+    explain: "Rh8+ forces Rxh8, then Rxh8# — the black rook smothers its own king."
+  },
+  {
+    title: "Skewer the king",
+    badge: "TACTIC",
+    type: "tactic",
+    turn: "White",
+    fen: "r5k1/8/8/8/8/8/8/R5K1 w - - 0 1",
+    solution: ["Ra8+"],
+    hints: ["Attack through the king", "The piece behind the king is valuable"],
+    explain: "Ra8+ skewers the king — it must move, then Rxa8 wins the black rook."
+  },
+  {
+    title: "Pin to win",
+    badge: "TACTIC",
+    type: "tactic",
+    turn: "White",
+    fen: "4k3/4q3/8/8/8/8/4R3/4K3 w - - 0 1",
+    solution: ["Re1"],
+    hints: ["Create an absolute pin along the file", "The queen cannot move safely"],
+    explain: "Re1 pins the queen to the king along the e-file — the queen is simply lost."
+  },
+  {
+    title: "Promotion!",
+    badge: "ENDGAME",
+    type: "endgame",
+    turn: "White",
+    fen: "8/4P3/8/8/8/8/8/4K1k1 w - - 0 1",
+    solution: ["e8=Q"],
+    hints: ["Push to the last rank", "Promote to the strongest piece"],
+    explain: "e8=Q promotes the pawn to a queen, creating an overwhelming material advantage."
+  },
+  {
+    title: "Knight fork",
+    badge: "TACTIC",
+    type: "tactic",
+    turn: "White",
+    fen: "r3k3/8/8/3N4/8/8/8/4K3 w - - 0 1",
+    solution: ["Nc7+"],
+    hints: ["Knights love forking", "One move attacks two pieces at once"],
+    explain: "Nc7+ forks the king and rook simultaneously — a textbook knight fork."
+  },
+  {
+    title: "Discovered check",
+    badge: "TACTIC",
+    type: "tactic",
+    turn: "White",
+    fen: "r3k2r/ppp2ppp/8/3B4/3b4/8/PPP2PPP/R3K2R w KQkq - 0 1",
+    solution: ["Bxf7+"],
+    hints: ["Move a piece to reveal a check from behind", "Two threats at once"],
+    explain: "Bxf7+ is a discovered check — the bishop gives check while creating additional threats."
+  },
+  {
+    title: "Corridor mate",
+    badge: "MATE IN 1",
+    type: "mate",
+    turn: "White",
+    fen: "5rk1/R4ppp/8/8/8/8/5PPP/6K1 w - - 0 1",
+    solution: ["Ra8"],
+    hints: ["The king is trapped on the edge", "Cut off all escape squares"],
+    explain: "Ra8! traps the king in the corridor — there is no escape from the rook's control."
+  }
+];
+
+let cur = 0, solved = 0, attempts = 0, revealed = false, hintIdx = 0;
+
+function parseFen(fen) {
+  const ranks = fen.split(' ')[0].split('/');
+  return ranks.map(rank => {
+    const row = [];
+    for (const ch of rank) {
+      if (isNaN(ch)) row.push(ch);
+      else for (let i = 0; i < parseInt(ch); i++) row.push('');
+    }
+    return row;
+  });
+}
+
+function renderBoard(fen) {
+  const grid = parseFen(fen);
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+
+  const rankC = document.getElementById('rank-coords');
+  rankC.innerHTML = '';
+  const fileC = document.getElementById('file-coords');
+  fileC.innerHTML = '';
+
+  for (let r = 0; r < 8; r++) {
+    const rankDiv = document.createElement('div');
+    rankDiv.className = 'rank';
+    for (let c = 0; c < 8; c++) {
+      const sq = document.createElement('div');
+      sq.className = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+      const pc = grid[r][c];
+      if (pc) sq.textContent = PIECES[pc] || '';
+      rankDiv.appendChild(sq);
+    }
+    boardEl.appendChild(rankDiv);
+
+    const rs = document.createElement('span');
+    rs.textContent = 8 - r;
+    rankC.appendChild(rs);
+  }
+
+  for (const f of ['a','b','c','d','e','f','g','h']) {
+    const fs = document.createElement('span');
+    fs.textContent = f;
+    fileC.appendChild(fs);
+  }
+}
+
+function loadPuzzle() {
+  const p = PUZZLES[cur];
+  revealed = false;
+  hintIdx = 0;
+
+  document.getElementById('badge').textContent = p.badge;
+  document.getElementById('badge').className = 'badge ' + p.type;
+  document.getElementById('puzzle-title').textContent = p.title;
+  document.getElementById('turn-label').innerHTML = `<strong>${p.turn}</strong> to move`;
+  document.getElementById('answer').value = '';
+  document.getElementById('feedback').textContent = 'Enter your move above';
+  document.getElementById('feedback').className = 'feedback empty';
+  document.getElementById('hint-note').textContent = '';
+  document.getElementById('sc-num').textContent = `${cur + 1}/${PUZZLES.length}`;
+
+  renderBoard(p.fen);
+}
+
+function normalize(s) {
+  return s.replace(/\s/g, '').toLowerCase();
+}
+
+function checkAnswer() {
+  const p = PUZZLES[cur];
+  const val = document.getElementById('answer').value.trim();
+  if (!val) return;
+
+  attempts++;
+  document.getElementById('sc-attempts').textContent = attempts;
+
+  const correct = p.solution.some(s => normalize(s) === normalize(val));
+  const fb = document.getElementById('feedback');
+
+  if (correct) {
+    fb.textContent = '✓ Correct! ' + p.explain;
+    fb.className = 'feedback correct';
+    document.getElementById('hint-note').textContent = '';
+    if (!revealed) {
+      solved++;
+      document.getElementById('sc-solved').textContent = solved;
+    }
+  } else {
+    fb.textContent = '✗ Not quite — try again, or use a hint.';
+    fb.className = 'feedback wrong';
+  }
+}
+
+function showHint() {
+  const p = PUZZLES[cur];
+  const hint = p.hints[Math.min(hintIdx, p.hints.length - 1)];
+  hintIdx = Math.min(hintIdx + 1, p.hints.length - 1);
+  document.getElementById('hint-note').textContent = 'Hint: ' + hint;
+}
+
+function showSolution() {
+  const p = PUZZLES[cur];
+  revealed = true;
+  const fb = document.getElementById('feedback');
+  fb.textContent = 'Solution: ' + p.solution.join(', ') + '. ' + p.explain;
+  fb.className = 'feedback hint';
+}
+
+function nextPuzzle() {
+  cur = (cur + 1) % PUZZLES.length;
+  loadPuzzle();
+}
+
+document.getElementById('answer').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkAnswer();
+});
+
+loadPuzzle();
+
+/* ============================================ */
+/* AI Coach chatbot                             */
+/* ============================================ */
+const chatLauncher = document.getElementById('chat-launcher');
+const chatPanel = document.getElementById('chat-panel');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
+
+chatLauncher.addEventListener('click', () => {
+  chatPanel.classList.toggle('open');
+  if (chatPanel.classList.contains('open')) chatInput.focus();
+});
+
+// Conversation memory — sent in full with every request
+let chatHistory = [];
+
+// Built fresh each message so the coach always knows the CURRENT puzzle
+function buildSystemPrompt() {
+  const p = PUZZLES[cur];
+  return `You are a friendly chess coach inside a chess puzzle web app.
+
+THE PUZZLE THE USER IS CURRENTLY LOOKING AT:
+- Title: ${p.title} (${p.badge})
+- Position (FEN): ${p.fen}
+- ${p.turn} to move
+- Correct solution: ${p.solution.join(', ')}
+- Explanation: ${p.explain}
+
+COACHING RULES:
+- Be encouraging and keep answers short (2-4 sentences).
+- Guide with questions and nudges. Do NOT reveal the solution move unless the user clearly asks for the answer or says they give up.
+- If they propose a wrong move, explain briefly why it fails in this position.
+- If they propose the right move, congratulate them and explain why it works.
+- Happily explain chess concepts (forks, pins, skewers, notation) for beginners.
+- Stay on the topic of chess.`;
+}
+
+function addChatBubble(text, who) {
+  const div = document.createElement('div');
+  div.className = 'cmsg ' + who;
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+async function sendChat() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  chatInput.value = '';
+  chatSend.disabled = true;
+
+  addChatBubble(text, 'user');
+  chatHistory.push({ role: 'user', content: text });
+
+  const typing = addChatBubble('thinking...', 'bot typing');
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: chatHistory
+      })
+    });
+
+    const data = await response.json();
+
+    const reply = data.content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('\n');
+
+    typing.remove();
+    addChatBubble(reply, 'bot');
+    chatHistory.push({ role: 'assistant', content: reply });
+
+  } catch (err) {
+    typing.remove();
+    addChatBubble('Hmm, something went wrong. Try again in a moment.', 'bot');
+    console.error(err);
+  }
+
+  chatSend.disabled = false;
+  chatInput.focus();
+}
+
+chatSend.addEventListener('click', sendChat);
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+</script>
+</body>
+</html>
